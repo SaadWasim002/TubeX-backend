@@ -122,18 +122,19 @@ const loginController = asyncHandler(async (req , res) => {
 })
 
 const logoutController = asyncHandler(async (req , res) => {
-    await User.findByIdAndUpdate(
+    console.log("User from req:", req.user);
+    const user = await User.findByIdAndUpdate(
         req.user._id,
         {
             $set : {
-                refreshToken : undefined
+                refreshToken : null
             }
         },
         {
             new : true
         }
     )
-
+    console.log(user);
     const option = {
         httpOnly : true,
         secure : true
@@ -141,8 +142,8 @@ const logoutController = asyncHandler(async (req , res) => {
 
     return res
     .status(200)
-    .clearCookie("accessToken")
-    .clearCookie("refreshToken")
+    .clearCookie("accessToken" , option)
+    .clearCookie("refreshToken" , option)
     .json(
         new ApiResponse(200 , {} , "User logged Out")
     )
