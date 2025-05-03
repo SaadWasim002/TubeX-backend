@@ -6,17 +6,17 @@ import ApiResponse from "../utils/ApiResponse.js";
 
 const generateAccessTokenAndRefreshToken = async (userid) =>{
     try {
-        const user = await User.findById(userid);
-        const accessToken = generateAccessToken();
-        const refreshToken = generateRefreshToken();
+        const user = await User.findById(userid);   
+        const accessToken = user.generateAccessToken();
+        const refreshToken = user.generateRefreshToken();
 
         user.refreshToken = refreshToken;
-        await user.save({ validateBeforeSave : false });
+        await user.save({ validateBeforeSave : false });    
 
         return { accessToken , refreshToken };
 
     } catch (error) {
-        throw new ApiError(501 , "Something went wrong while generating refresh token and access token");
+        throw new ApiError(501 , `Something went wrong while generating refresh token and access token ${error.message}`);
     }
 }
 
@@ -35,12 +35,15 @@ const registerController = asyncHandler(async (req , res) => {
     if( existingUser ){
         throw new ApiError(409 , "User already exists");    
     }
-    console.log(req.files);
-    const avatarLocalPath = req.files?.avatar[0]?.path;
+    // console.log(req.files);
+    let avatarLocalPath ;
+    if(req.files && Array.isArray(req.files.avatar) && req.files.avatar.length > 0){
+        avatarLocalPath = req.files.avatar[0].path;
+    }
     // const coverImageLocalPath = req.files?.coverImage[0]?.path;
     let coverImageLocalPath;
 
-    if(req.files && Array.isArray(req.files.avatar) && req.files.avatar.length > 0){
+    if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0){
         coverImageLocalPath = req.files.coverImage[0].path;
     }
 
@@ -74,13 +77,14 @@ const registerController = asyncHandler(async (req , res) => {
 })
 
 const loginController = asyncHandler(async (req , res) => {
+    // console.log(req);
     const { username , email , password } = req.body;
 
-    if(!username || !email){
+    if(!username && !email){
         throw new ApiError(400 , "username or email required")
     }
 
-    const user = await User.find({
+    const user = await User.findOne({
         $or : [{username} , {email}]
     });
 
